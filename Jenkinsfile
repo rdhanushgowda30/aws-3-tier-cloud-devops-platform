@@ -41,17 +41,25 @@ pipeline {
         }
 
         stage('5. Deploy Application') {
-            steps {
-                sh '''
-                    docker rm -f $CONTAINER_NAME || true
-                    docker run -d \
-                      --name $CONTAINER_NAME \
-                      --restart unless-stopped \
-                      --env-file "$WORKSPACE/frontend/.env" \
-                      -p 127.0.0.1:3000:3000 \
-                      $IMAGE_NAME:latest
-                '''
+    steps {
+        sh '''
+            set -eu
+
+            test -f "$WORKSPACE/frontend/.env" || {
+                echo "ERROR: frontend/.env is missing from the Jenkins workspace."
+                exit 1
             }
+
+            docker rm -f "$CONTAINER_NAME" || true
+
+            docker run -d \
+              --name "$CONTAINER_NAME" \
+              --restart unless-stopped \
+              --env-file "$WORKSPACE/frontend/.env" \
+              -p 127.0.0.1:3000:3000 \
+              "$IMAGE_NAME:latest"
+        '''
+          }
         }
     }
 }
